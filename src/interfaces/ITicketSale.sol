@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: MIT 
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
 interface ITicketSale {
-
     struct TicketSaleInitParams {
         address eventTicket;
         address organizer;
@@ -13,4 +12,12 @@ interface ITicketSale {
     }
 
     function initialize(TicketSaleInitParams memory initParams) external;
+
+    event TicketsBought(
+        address indexed buyer, uint256[] indexed ticketIds, uint256 ticketAmount, uint256 totalTicketCost
+    );
+    event TicketMaxSupplySet(uint256 newMaxSupply);
+    event TicketPriceInWeiSet(uint256 ticketPriceInWei);
+    event SaleEndSet(uint256 saleEnd);
+    event SaleStartSet(uint256 saleStart);
 }
