@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
+import {ERC2771Context} from "openzeppelin-contracts/contracts/metatx/ERC2771Context.sol";
 import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import {TransferUtils} from "./utils/TransferUtils.sol";
 import {EventTicket} from "./EventTicket.sol";
 import {ITicketSale} from "./interfaces/ITicketSale.sol";
 
-contract TicketSale is ITicketSale, Initializable {
-    using TransferUtils for address;
+contract TicketSale is ITicketSale, Initializable, ERC2771Context {
+    using SafeERC20 for IERC20;
 
-    address private constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH on Ethereum mainnet
+    IERC20 private constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WETH on Ethereum mainnet
 
     EventTicket public ticket;
 
@@ -26,7 +28,7 @@ contract TicketSale is ITicketSale, Initializable {
         _;
     }
 
-    constructor() {
+    constructor(address trustedForwarder_) ERC2771Context(trustedForwarder_) {
         _disableInitializers();
     }
 
@@ -68,11 +70,8 @@ contract TicketSale is ITicketSale, Initializable {
         emit SaleStartSet(saleStart);
     }
 
-    //@todo add feature for gasless transactions
-
     function buy(uint256 ticketAmount, uint256 priceLimitPerTicket)
         external
-        payable
         returns (uint256[] memory ticketIds)
     {
         // validate inputs
@@ -82,31 +81,26 @@ contract TicketSale is ITicketSale, Initializable {
         require(block.timestamp <= saleEnd, "Sale ended");
 
         uint256 totalTicketCost = ticketAmount * ticketPriceInWei;
-        require(totalTicketCost <= msg.value, "Not enough ether");
         require(totalTicketCost <= ticketAmount * priceLimitPerTicket, "Price limit exceeded");
 
         // mint tickets
         ticketIds = new uint256[](ticketAmount);
 
+        address sender = _msgSender();
         for (uint256 i = 0; i < ticketAmount; i++) {
             //@todo consider ERC721A for gas saving when buying multiple tickets
-            ticket.mint(msg.sender, currentTicketId);
+            ticket.mint(sender, currentTicketId);
             ticketIds[i] = currentTicketId;
             currentTicketId += 1;
         }
 
-        // pay organizer / refund buyer
-        WETH._sendWeth(organizer, totalTicketCost);
+        // pay organizer
+        WETH.safeTransferFrom(sender, organizer, totalTicketCost);
 
-        emit TicketsBought(msg.sender, ticketIds, ticketAmount, totalTicketCost);
-
-        if (msg.value > totalTicketCost) {
-            (bool success,) = msg.sender.call{value: msg.value - totalTicketCost}("");
-            require(success, "ETH transfer failed");
-        }
+        emit TicketsBought(sender, ticketIds, ticketAmount, totalTicketCost);
     }
 
     function _onlyOrganizer() internal view {
-        require(msg.sender == organizer, "Callable only by the organizer");
+        require(_msgSender() == organizer, "Callable only by the organizer");
     }
 }
