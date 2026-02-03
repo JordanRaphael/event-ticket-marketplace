@@ -6,6 +6,8 @@ import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initia
 
 import {IEventTicket} from "./interfaces/IEventTicket.sol";
 
+/// @notice ERC721 ticket contract for a single event.
+/// @dev Minting, burning, and transfers are restricted to protocol contracts.
 contract EventTicket is IEventTicket, ERC721, Initializable {
     address public ticketSale;
     address public ticketMarketplace;
@@ -13,58 +15,84 @@ contract EventTicket is IEventTicket, ERC721, Initializable {
     uint256 public totalSupply;
 
     string public baseURI;
-    string public ticketName;
-    string public ticketSymbol;
+    string public name_;
+    string public symbol_;
 
+    /// @notice Disables initializers on the implementation contract.
+    /// @dev Constructor runs only on the implementation used for clones.
     constructor() ERC721("NA", "NA") {
         _disableInitializers();
     }
 
-    modifier onlyProtocol() {
-        _onlyProtocol();
+    modifier onlySaleOrMarketplace() {
+        _onlySaleOrMarketplace();
         _;
     }
 
-    function initialize(EventTicketInitParams memory initParams) external initializer {
-        baseURI = initParams.baseURI;
-        ticketName = initParams.name;
-        ticketSymbol = initParams.symbol;
-        ticketSale = initParams.ticketSale;
-        ticketMarketplace = initParams.ticketMarketplace;
+    /// @notice Initializes the ticket contract.
+    /// @dev Can only be called once.
+    /// @param params Initialization parameters for the event ticket.
+    function initialize(EventTicketInitParams memory params) external initializer {
+        baseURI = params.baseURI;
+        name_ = params.name;
+        symbol_ = params.symbol;
+        ticketSale = params.ticketSale;
+        ticketMarketplace = params.ticketMarketplace;
     }
 
-    function mint(address to, uint256 tokenId) external onlyProtocol {
+    /// @notice Mints a ticket to a recipient.
+    /// @dev Only callable by the ticket sale or marketplace.
+    /// @param to Recipient address.
+    /// @param ticketId Ticket id to mint.
+    function mint(address to, uint256 ticketId) external onlySaleOrMarketplace {
         totalSupply += 1;
-        _mint(to, tokenId);
+        _mint(to, ticketId);
     }
 
-    function burn(uint256 tokenId) external onlyProtocol {
+    /// @notice Burns a ticket.
+    /// @dev Only callable by the ticket sale or marketplace.
+    /// @param ticketId Token id to burn.
+    function burn(uint256 ticketId) external onlySaleOrMarketplace {
         totalSupply -= 1;
-        _burn(tokenId);
+        _burn(ticketId);
     }
 
-    function transferFrom(address from, address to, uint256 tokenId) public override onlyProtocol {
-        super.transferFrom(from, to, tokenId);
+    /// @notice Transfers a ticket.
+    /// @dev Only callable by the ticket sale or marketplace.
+    /// @param from Current owner.
+    /// @param to New owner.
+    /// @param ticketId Token id to transfer.
+    function transferFrom(address from, address to, uint256 ticketId) public override onlySaleOrMarketplace {
+        super.transferFrom(from, to, ticketId);
     }
 
+    /// @notice Checks interface support.
+    /// @param interfaceId Interface id to check.
+    /// @return True if the interface is supported.
     function supportsInterface(bytes4 interfaceId) public view override(ERC721) returns (bool) {
         return interfaceId == type(IERC721).interfaceId || interfaceId == type(IERC721Metadata).interfaceId
             || super.supportsInterface(interfaceId);
     }
 
+    /// @notice Returns the configured ticket name.
+    /// @return Ticket name.
     function name() public view override returns (string memory) {
-        return ticketName;
+        return name_;
     }
 
+    /// @notice Returns the configured ticket symbol.
+    /// @return Ticket symbol.
     function symbol() public view override returns (string memory) {
-        return ticketSymbol;
+        return symbol_;
     }
 
+    /// @notice Returns the base URI for token metadata.
+    /// @return Base URI string.
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
     }
 
-    function _onlyProtocol() internal view {
+    function _onlySaleOrMarketplace() internal view {
         require(msg.sender == ticketSale || msg.sender == ticketMarketplace, "Callable only by protocol addresses");
     }
 }

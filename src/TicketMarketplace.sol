@@ -12,108 +12,121 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {EventTicket} from "./EventTicket.sol";
 import {ITicketMarketplace} from "./interfaces/ITicketMarketplace.sol";
 
+/// @notice Secondary marketplace for event tickets using WETH.
+/// @dev Uses meta-tx context and holds assets in escrow while orders are active.
 contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver, ERC2771Context {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
     IERC20 private constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WETH on Ethereum mainnet
 
-    uint256 private constant FEE_BPS = 10_000;
-    uint256 private constant MINIMUM_LISTING_DURATION = 5 minutes;
+    uint256 private constant BPS_DENOMINATOR = 10_000;
+    uint256 private constant MIN_ORDER_DURATION = 5 minutes;
 
     EventTicket public ticket;
 
-    address public protocol;
-    address public organizer;
-    uint256 public totalFees; // total fee percentage in FEE_BPS
-    uint256 public organizerFee; // organizer's percentage of the total fees in FEE_BPS
+    address public protocolFeeRecipient;
+    address public eventOrganizer;
+    uint256 public totalFeeBps; // total fee percentage in BPS_DENOMINATOR
+    uint256 public organizerFeeBps; // eventOrganizer's percentage of the total fees in BPS_DENOMINATOR
 
     // address to order Ids
-    mapping(address => uint256[]) addressToOrderIds;
+    mapping(address => uint256[]) orderIdsByCreator;
 
     // orderId to order
-    mapping(uint256 => Order) orderIdToOrder;
+    mapping(uint256 => Order) ordersById;
 
     // current order id
-    uint256 currentOrderId;
+    uint256 nextOrderId;
 
+    /// @notice Disables initializers on the implementation contract.
+    /// @dev Constructor runs only on the implementation used for clones.
+    /// @param trustedForwarder_ ERC2771 trusted forwarder.
     constructor(address trustedForwarder_) ERC2771Context(trustedForwarder_) {
         _disableInitializers();
     }
 
+    /// @notice Initializes the marketplace.
+    /// @dev Can only be called once.
+    /// @param initParams Initialization parameters for the marketplace.
     function initialize(TicketMarketplaceInitParams memory initParams) external initializer {
         ticket = EventTicket(initParams.eventTicket);
-        organizer = initParams.organizer;
-        totalFees = initParams.totalFees;
-        organizerFee = initParams.organizerFee;
-        protocol = initParams.protocol;
+        eventOrganizer = initParams.organizer;
+        totalFeeBps = initParams.totalFees;
+        organizerFeeBps = initParams.organizerFee;
+        protocolFeeRecipient = initParams.protocol;
     }
 
     //@audit add matchOrders function, executable only by the protocol (off-chain matching engine)
 
-    function createOrder(CreateOrder memory orderParams) external {
+    /// @notice Creates a single order and escrows the asset.
+    /// @param params Order creation parameters.
+    function createOrder(CreateOrder memory params) external {
         address sender = _msgSender();
-        if (orderParams.orderType == OrderType.ASK) {
-            ticket.safeTransferFrom(sender, address(this), orderParams.eventTicketId);
-        } else if (orderParams.orderType == OrderType.BID) {
-            WETH.safeTransferFrom(sender, address(this), orderParams.price);
+        if (params.orderType == OrderType.ASK) {
+            ticket.safeTransferFrom(sender, address(this), params.eventTicketId);
+        } else if (params.orderType == OrderType.BID) {
+            WETH.safeTransferFrom(sender, address(this), params.price);
         } else {
             revert("Invalid orderType");
         }
 
-        _createOrder(orderParams);
+        _createOrder(params);
     }
 
-    function createOrders(CreateOrder[] memory orderParams) external {
+    /// @notice Creates multiple orders and escrows their assets.
+    /// @param paramsList Array of order creation parameters.
+    function createOrders(CreateOrder[] memory paramsList) external {
         address sender = _msgSender();
-        for (uint256 i = 0; i < orderParams.length; i++) {
-            if (orderParams[i].orderType == OrderType.ASK) {
-                ticket.safeTransferFrom(sender, address(this), orderParams[i].eventTicketId);
-            } else if (orderParams[i].orderType == OrderType.BID) {
-                WETH.safeTransferFrom(sender, address(this), orderParams[i].price);
+        for (uint256 i = 0; i < paramsList.length; i++) {
+            if (paramsList[i].orderType == OrderType.ASK) {
+                ticket.safeTransferFrom(sender, address(this), paramsList[i].eventTicketId);
+            } else if (paramsList[i].orderType == OrderType.BID) {
+                WETH.safeTransferFrom(sender, address(this), paramsList[i].price);
             } else {
                 revert("Invalid orderType");
             }
         }
 
-        for (uint256 i = 0; i < orderParams.length; i++) {
-            _createOrder(orderParams[i]);
+        for (uint256 i = 0; i < paramsList.length; i++) {
+            _createOrder(paramsList[i]);
         }
     }
 
-    function _createOrder(CreateOrder memory orderParams) private {
-        require(orderParams.price >= FEE_BPS, "Invalid price");
-        require(orderParams.deadline >= block.timestamp + MINIMUM_LISTING_DURATION, "Invalid deadline");
+    function _createOrder(CreateOrder memory params) private {
+        require(params.price >= BPS_DENOMINATOR, "Invalid price");
+        require(params.deadline >= block.timestamp + MIN_ORDER_DURATION, "Invalid deadline");
 
-        uint256 orderId = currentOrderId;
+        uint256 orderId = nextOrderId;
 
         address sender = _msgSender();
         Order memory order = Order({
             creator: sender,
             orderId: orderId,
-            eventTicketId: orderParams.eventTicketId,
-            price: orderParams.price,
-            deadline: orderParams.deadline,
-            orderType: orderParams.orderType,
+            eventTicketId: params.eventTicketId,
+            price: params.price,
+            deadline: params.deadline,
+            orderType: params.orderType,
             status: OrderStatus.ACTIVE
         });
 
         _updateOrderStorage(orderId, order, Action.CREATE_ORDER);
 
         emit OrderCreated(
-            sender,
-            orderParams.eventTicketId,
-            orderParams.orderType,
-            block.timestamp,
-            orderParams.price,
-            orderParams.deadline
+            sender, params.eventTicketId, params.orderType, block.timestamp, params.price, params.deadline
         );
     }
 
+    /// @notice Fills a single order.
+    /// @param orderId Order id to fill.
+    /// @param priceLimit Price limit used to protect against slippage.
     function fillOrder(uint256 orderId, uint256 priceLimit) external {
         _fillOrder(orderId, priceLimit);
     }
 
+    /// @notice Fills multiple orders.
+    /// @param orderIds Array of order ids to fill.
+    /// @param priceLimits Array of price limits corresponding to each order.
     function fillOrders(uint256[] memory orderIds, uint256[] memory priceLimits) external {
         require(orderIds.length == priceLimits.length, "Input array length mismatch");
 
@@ -123,7 +136,7 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
     }
 
     function _fillOrder(uint256 orderId, uint256 priceLimit) private {
-        Order memory order = orderIdToOrder[orderId];
+        Order memory order = ordersById[orderId];
         require(order.status == OrderStatus.ACTIVE, "Order not active");
         require(order.deadline >= block.timestamp, "Order expired");
 
@@ -161,8 +174,13 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
         emit OrderFilled(order.creator, sender, order.eventTicketId, order.orderType, block.timestamp, order.price);
     }
 
-    function updateOrder(uint256 orderId, uint256 newPrice, uint256 newDeadline) external payable {
-        int256 price = _updateOrder(orderId, newPrice, newDeadline);
+    /// @notice Updates a single order's price or deadline.
+    /// @dev Handles WETH deposits or refunds to match the new price.
+    /// @param orderId Order id to update.
+    /// @param updatedPrice Updated price for the order.
+    /// @param updatedDeadline Updated deadline for the order.
+    function updateOrder(uint256 orderId, uint256 updatedPrice, uint256 updatedDeadline) external payable {
+        int256 price = _updateOrder(orderId, updatedPrice, updatedDeadline);
         if (price > 0) {
             WETH.safeTransferFrom(_msgSender(), address(this), price.toUint256());
         } else if (price < 0) {
@@ -170,16 +188,22 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
         }
     }
 
-    function updateOrders(uint256[] memory orderIds, uint256[] memory newPrices, uint256[] memory newDeadlines)
+    /// @notice Updates multiple orders' prices or deadlines.
+    /// @dev Handles a net WETH deposit or refund to match the new prices.
+    /// @param orderIds Array of order ids to update.
+    /// @param updatedPrices Array of updated prices corresponding to each order.
+    /// @param updatedDeadlines Array of updated deadlines corresponding to each order.
+    function updateOrders(uint256[] memory orderIds, uint256[] memory updatedPrices, uint256[] memory updatedDeadlines)
         external
     {
         require(
-            orderIds.length == newPrices.length && orderIds.length == newDeadlines.length, "Input array length mismatch"
+            orderIds.length == updatedPrices.length && orderIds.length == updatedDeadlines.length,
+            "Input array length mismatch"
         );
 
         int256 price = 0;
         for (uint256 i = 0; i < orderIds.length; i++) {
-            price += _updateOrder(orderIds[i], newPrices[i], newDeadlines[i]);
+            price += _updateOrder(orderIds[i], updatedPrices[i], updatedDeadlines[i]);
         }
 
         if (price > 0) {
@@ -189,19 +213,19 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
         }
     }
 
-    function _updateOrder(uint256 orderId, uint256 newPrice, uint256 newDeadline) private returns (int256) {
-        require(newPrice >= FEE_BPS, "Invalid price");
-        require(newDeadline >= block.timestamp + MINIMUM_LISTING_DURATION, "Invalid deadline");
+    function _updateOrder(uint256 orderId, uint256 updatedPrice, uint256 updatedDeadline) private returns (int256) {
+        require(updatedPrice >= BPS_DENOMINATOR, "Invalid price");
+        require(updatedDeadline >= block.timestamp + MIN_ORDER_DURATION, "Invalid deadline");
 
-        Order memory order = orderIdToOrder[orderId];
+        Order memory order = ordersById[orderId];
         require(order.creator == _msgSender(), "Sender not creator");
         require(order.status == OrderStatus.ACTIVE, "Order not active");
-        require(order.orderType == OrderType.BID || newPrice == 0, "Can't update price of ASK orders");
+        require(order.orderType == OrderType.BID || updatedPrice == 0, "Can't update price of ASK orders");
 
         uint256 oldPrice = order.price;
 
-        order.price = newPrice;
-        order.deadline = newDeadline;
+        order.price = updatedPrice;
+        order.deadline = updatedDeadline;
 
         _updateOrderStorage(orderId, order, Action.UPDATE_ORDER);
 
@@ -209,13 +233,17 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
             _msgSender(), order.eventTicketId, order.orderType, block.timestamp, order.price, order.deadline
         );
 
-        return newPrice.toInt256() - oldPrice.toInt256();
+        return updatedPrice.toInt256() - oldPrice.toInt256();
     }
 
+    /// @notice Cancels a single order and returns the escrowed asset.
+    /// @param orderId Order id to cancel.
     function cancelOrder(uint256 orderId) external {
         _cancelOrder(orderId);
     }
 
+    /// @notice Cancels multiple orders and returns their escrowed assets.
+    /// @param orderIds Array of order ids to cancel.
     function cancelOrders(uint256[] memory orderIds) external {
         for (uint256 i = 0; i < orderIds.length; i++) {
             _cancelOrder(orderIds[i]);
@@ -223,7 +251,7 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
     }
 
     function _cancelOrder(uint256 orderId) private {
-        Order memory order = orderIdToOrder[orderId];
+        Order memory order = ordersById[orderId];
         address sender = _msgSender();
         require(order.status == OrderStatus.ACTIVE, "Order not active");
         require(order.creator == sender, "Sender not creator");
@@ -243,28 +271,30 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
         emit OrderCancelled(sender, order.eventTicketId, order.orderType, block.timestamp, order.price);
     }
 
+    /// @notice ERC721 receive hook for escrowed tickets.
+    /// @return selector ERC721 receiver selector.
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function _handlePayments(uint256 totalPayment, address seller) private {
-        uint256 fees = totalPayment * totalFees / FEE_BPS;
-        uint256 paymentToSeller = totalPayment - fees;
-        uint256 paymentToOrganizer = fees * organizerFee / FEE_BPS;
+    function _handlePayments(uint256 grossAmount, address seller) private {
+        uint256 fees = grossAmount * totalFeeBps / BPS_DENOMINATOR;
+        uint256 paymentToSeller = grossAmount - fees;
+        uint256 paymentToOrganizer = fees * organizerFeeBps / BPS_DENOMINATOR;
         uint256 paymentToProtocol = fees - paymentToOrganizer;
 
         WETH.safeTransfer(seller, paymentToSeller);
-        if (paymentToOrganizer > 0) WETH.safeTransfer(organizer, paymentToOrganizer);
-        if (paymentToProtocol > 0) WETH.safeTransfer(protocol, paymentToProtocol);
+        if (paymentToOrganizer > 0) WETH.safeTransfer(eventOrganizer, paymentToOrganizer);
+        if (paymentToProtocol > 0) WETH.safeTransfer(protocolFeeRecipient, paymentToProtocol);
     }
 
     function _updateOrderStorage(uint256 orderId, Order memory order, Action action) private {
         if (action == Action.CREATE_ORDER) {
-            addressToOrderIds[msg.sender].push(orderId);
-            orderIdToOrder[orderId] = order;
-            currentOrderId += 1;
+            orderIdsByCreator[msg.sender].push(orderId);
+            ordersById[orderId] = order;
+            nextOrderId += 1;
         } else if (action == Action.FILL_ORDER || action == Action.UPDATE_ORDER || action == Action.CANCEL_ORDER) {
-            orderIdToOrder[orderId] = order;
+            ordersById[orderId] = order;
         } else {
             revert("Invalid action");
         }
