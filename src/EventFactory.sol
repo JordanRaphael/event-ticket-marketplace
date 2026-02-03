@@ -13,6 +13,8 @@ contract EventFactory is IEventFactory, Ownable2Step {
     using Clones for address;
 
     uint256 constant DELAY_WINDOW = 7 days;
+    uint256 constant TOTAL_FEES = 1_000; // 10% of sales
+    uint256 constant ORGANIZER_FEE = 5_000; // 50% of total fees
 
     address public eventTicketImpl;
     address public ticketSaleImpl;
@@ -80,32 +82,47 @@ contract EventFactory is IEventFactory, Ownable2Step {
         emit ImplementationsUpgraded(eventTicketImpl, ticketSaleImpl, ticketMarketplaceImpl, block.timestamp);
     }
 
-    function createTicketSale(
-        IEventTicket.EventTicketInitParams memory eventTicketInitParams,
-        ITicketSale.TicketSaleInitParams memory ticketSaleInitParams,
-        ITicketMarketplace.TicketMarketplaceInitParams memory ticketMarketplaceInitParams
-    ) external {
+    // caller can set the organizer in ticket/sale/marketplace but in the state of factory, msg.sender is preserved
+    // free tickets are allowed (having priceInWei=0 at Sale)
+    function createTicketSale(IEventFactory.CreateTicketSaleParams memory createTicketSaleParams) external {
         // clone implementations
         address eventTicket = eventTicketImpl.clone();
         address ticketSale = ticketSaleImpl.clone();
         address ticketMarketplace = ticketMarketplaceImpl.clone();
 
-        // initialize
-        eventTicketInitParams.ticketSale = ticketSale;
-        eventTicketInitParams.ticketMarketplace = ticketMarketplace;
+        IEventTicket.EventTicketInitParams memory eventTicketInitParams = IEventTicket.EventTicketInitParams({
+            name: createTicketSaleParams.name,
+            symbol: createTicketSaleParams.symbol,
+            baseURI: createTicketSaleParams.baseURI,
+            organizer: createTicketSaleParams.organizer,
+            ticketSale: ticketSale,
+            ticketMarketplace: ticketMarketplace
+        });
         IEventTicket(eventTicket).initialize(eventTicketInitParams);
 
+        ITicketSale.TicketSaleInitParams memory ticketSaleInitParams = ITicketSale.TicketSaleInitParams({
+            eventTicket: eventTicket,
+            organizer: createTicketSaleParams.organizer,
+            saleStart: createTicketSaleParams.saleStart,
+            saleEnd: createTicketSaleParams.saleEnd,
+            ticketPriceInWei: createTicketSaleParams.priceInWei,
+            ticketMaxSupply: createTicketSaleParams.maxSupply
+        });
         require(ticketSaleInitParams.saleStart >= block.timestamp, "Sale start cannot be in the past");
         require(
             ticketSaleInitParams.saleStart < ticketSaleInitParams.saleEnd, "Sale end must be greater than sale start"
         );
-        ticketSaleInitParams.eventTicket = eventTicket;
+        require(ticketSaleInitParams.ticketMaxSupply > 0, "Sale should have positive number of ticket supply");
         ITicketSale(ticketSale).initialize(ticketSaleInitParams);
 
-        ticketMarketplaceInitParams.eventTicket = eventTicket;
-        ticketMarketplaceInitParams.protocol = owner();
-        ticketMarketplaceInitParams.totalFees = 1_000; // 10% of sales
-        ticketMarketplaceInitParams.organizerFee = 5_000; // 50% of total fees
+        ITicketMarketplace.TicketMarketplaceInitParams memory ticketMarketplaceInitParams =
+            ITicketMarketplace.TicketMarketplaceInitParams({
+                eventTicket: eventTicket,
+                organizer: createTicketSaleParams.organizer,
+                protocol: owner(),
+                totalFees: TOTAL_FEES,
+                organizerFee: ORGANIZER_FEE
+            });
         ITicketMarketplace(ticketMarketplace).initialize(ticketMarketplaceInitParams);
 
         EventEntry memory eventEntry = EventEntry({

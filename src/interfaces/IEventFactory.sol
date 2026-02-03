@@ -10,6 +10,17 @@ interface IEventFactory {
         address ticketMarketplace;
     }
 
+    struct CreateTicketSaleParams {
+        string name;
+        string symbol;
+        string baseURI;
+        address organizer;
+        uint256 priceInWei;
+        uint256 maxSupply;
+        uint256 saleStart;
+        uint256 saleEnd;
+    }
+
     event ImplementationsProposed(
         address eventTicket, address ticketSale, address ticketMarketplace, uint256 timestamp
     );

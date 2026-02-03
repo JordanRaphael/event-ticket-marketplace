@@ -70,15 +70,16 @@ contract TicketSale is ITicketSale, Initializable, ERC2771Context {
         emit SaleStartSet(saleStart);
     }
 
-    function buy(uint256 ticketAmount, uint256 priceLimitPerTicket)
-        external
-        returns (uint256[] memory ticketIds)
-    {
+    function buy(uint256 ticketAmount, uint256 priceLimitPerTicket) external returns (uint256[] memory ticketIds) {
         // validate inputs
         require(ticketAmount > 0, "At least 1 ticket");
-        require(ticketMaxSupply - ticket.totalSupply() >= ticketAmount, "Not enough tickets left"); //@todo allow to buy remaining tickets if less are left
+        require(ticketMaxSupply - ticket.totalSupply() > 0, "Tickets sold out");
         require(block.timestamp >= saleStart, "Sale isn't live yet");
         require(block.timestamp <= saleEnd, "Sale ended");
+
+        if (ticketMaxSupply - ticket.totalSupply() < ticketAmount) {
+            ticketAmount = ticketMaxSupply - ticket.totalSupply();
+        }
 
         uint256 totalTicketCost = ticketAmount * ticketPriceInWei;
         require(totalTicketCost <= ticketAmount * priceLimitPerTicket, "Price limit exceeded");

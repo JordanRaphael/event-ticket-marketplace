@@ -39,6 +39,13 @@ interface ITicketMarketplace {
         OrderStatus status;
     }
 
+    struct CreateOrder {
+        uint256 eventTicketId;
+        uint256 price;
+        uint256 deadline;
+        OrderType orderType;
+    }
+
     function initialize(TicketMarketplaceInitParams memory initParams) external;
 
     event OrderCreated(

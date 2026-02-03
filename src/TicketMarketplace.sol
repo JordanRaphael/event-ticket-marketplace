@@ -49,7 +49,9 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
         protocol = initParams.protocol;
     }
 
-    function createOrder(Order memory orderParams) external {
+    //@audit add matchOrders function, executable only by the protocol (off-chain matching engine)
+
+    function createOrder(CreateOrder memory orderParams) external {
         address sender = _msgSender();
         if (orderParams.orderType == OrderType.ASK) {
             ticket.safeTransferFrom(sender, address(this), orderParams.eventTicketId);
@@ -62,7 +64,7 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
         _createOrder(orderParams);
     }
 
-    function createOrders(Order[] memory orderParams) external {
+    function createOrders(CreateOrder[] memory orderParams) external {
         address sender = _msgSender();
         for (uint256 i = 0; i < orderParams.length; i++) {
             if (orderParams[i].orderType == OrderType.ASK) {
@@ -79,7 +81,7 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
         }
     }
 
-    function _createOrder(Order memory orderParams) private {
+    function _createOrder(CreateOrder memory orderParams) private {
         require(orderParams.price >= FEE_BPS, "Invalid price");
         require(orderParams.deadline >= block.timestamp + MINIMUM_LISTING_DURATION, "Invalid deadline");
 
@@ -194,7 +196,7 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
         Order memory order = orderIdToOrder[orderId];
         require(order.creator == _msgSender(), "Sender not creator");
         require(order.status == OrderStatus.ACTIVE, "Order not active");
-        require(order.orderType == OrderType.BID || newPrice == 0, "Can't increase price of ASK orders");
+        require(order.orderType == OrderType.BID || newPrice == 0, "Can't update price of ASK orders");
 
         uint256 oldPrice = order.price;
 
@@ -261,11 +263,7 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
             addressToOrderIds[msg.sender].push(orderId);
             orderIdToOrder[orderId] = order;
             currentOrderId += 1;
-        } else if (action == Action.FILL_ORDER) {
-            orderIdToOrder[orderId] = order;
-        } else if (action == Action.UPDATE_ORDER) {
-            orderIdToOrder[orderId] = order;
-        } else if (action == Action.CANCEL_ORDER) {
+        } else if (action == Action.FILL_ORDER || action == Action.UPDATE_ORDER || action == Action.CANCEL_ORDER) {
             orderIdToOrder[orderId] = order;
         } else {
             revert("Invalid action");
