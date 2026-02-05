@@ -9,12 +9,12 @@ import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol
 import {IERC721Receiver} from "openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import {EventTicket} from "./EventTicket.sol";
-import {ITicketMarketplace} from "./interfaces/ITicketMarketplace.sol";
+import {Ticket} from "./Ticket.sol";
+import {IMarketplace} from "./interfaces/IMarketplace.sol";
 
 /// @notice Secondary marketplace for event tickets using WETH.
 /// @dev Uses meta-tx context and holds assets in escrow while orders are active.
-contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver, ERC2771Context {
+contract Marketplace is IMarketplace, Initializable, IERC721Receiver, ERC2771Context {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
@@ -23,7 +23,7 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
     uint256 private constant BPS_DENOMINATOR = 10_000;
     uint256 private constant MIN_ORDER_DURATION = 5 minutes;
 
-    EventTicket public ticket;
+    Ticket public ticket;
 
     address public protocolFeeRecipient;
     address public eventOrganizer;
@@ -49,8 +49,8 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
     /// @notice Initializes the marketplace.
     /// @dev Can only be called once.
     /// @param initParams Initialization parameters for the marketplace.
-    function initialize(TicketMarketplaceInitParams memory initParams) external initializer {
-        ticket = EventTicket(initParams.eventTicket);
+    function initialize(MarketplaceInitParams memory initParams) external initializer {
+        ticket = Ticket(initParams.eventTicket);
         eventOrganizer = initParams.organizer;
         totalFeeBps = initParams.totalFees;
         organizerFeeBps = initParams.organizerFee;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-interface ITicketMarketplace {
-    struct TicketMarketplaceInitParams {
+interface IMarketplace {
+    struct MarketplaceInitParams {
         address eventTicket;
         address organizer;
         address protocol;
@@ -46,7 +46,7 @@ interface ITicketMarketplace {
         OrderType orderType;
     }
 
-    function initialize(TicketMarketplaceInitParams memory initParams) external;
+    function initialize(MarketplaceInitParams memory initParams) external;
 
     event OrderCreated(
         address indexed creator,

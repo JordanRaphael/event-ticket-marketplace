@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-interface IEventTicket {
-    struct EventTicketInitParams {
+interface ITicket {
+    struct TicketInitParams {
         string name;
         string symbol;
         string baseURI;
@@ -11,7 +11,7 @@ interface IEventTicket {
         address ticketMarketplace;
     }
 
-    function initialize(EventTicketInitParams memory initParams) external;
+    function initialize(TicketInitParams memory initParams) external;
 
     event TicketRedeemed(address redeemer, uint256 ticketId);
 }

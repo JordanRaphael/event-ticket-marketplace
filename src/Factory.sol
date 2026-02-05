@@ -4,14 +4,14 @@ pragma solidity ^0.8.33;
 import {Clones} from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 import {Ownable2Step, Ownable} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
 
-import {IEventTicket} from "./interfaces/IEventTicket.sol";
-import {ITicketSale} from "./interfaces/ITicketSale.sol";
-import {ITicketMarketplace} from "./interfaces/ITicketMarketplace.sol";
-import {IEventFactory} from "./interfaces/IEventFactory.sol";
+import {ITicket} from "./interfaces/ITicket.sol";
+import {ISale} from "./interfaces/ISale.sol";
+import {IMarketplace} from "./interfaces/IMarketplace.sol";
+import {IFactory} from "./interfaces/IFactory.sol";
 
 /// @notice Factory for cloning and initializing event ticketing contracts.
 /// @dev Ownable with a timelocked implementation upgrade flow.
-contract EventFactory is IEventFactory, Ownable2Step {
+contract Factory is IFactory, Ownable2Step {
     using Clones for address;
 
     uint256 constant IMPLEMENTATION_UPGRADE_DELAY = 7 days;
@@ -22,9 +22,9 @@ contract EventFactory is IEventFactory, Ownable2Step {
     address public ticketSaleImpl;
     address public ticketMarketplaceImpl;
 
-    address public pendingEventTicketImpl;
-    address public pendingTicketSaleImpl;
-    address public pendingTicketMarketplaceImpl;
+    address public pendingTicketImpl;
+    address public pendingSaleImpl;
+    address public pendingMarketplaceImpl;
 
     uint256 public implementationUpgradeTime;
     uint256 public nextEventId;
@@ -68,12 +68,12 @@ contract EventFactory is IEventFactory, Ownable2Step {
         require(_eventTicketImpl.code.length > 0, "Not a contract");
         require(_ticketSaleImpl.code.length > 0, "Not a contract");
         require(_ticketMarketplaceImpl.code.length > 0, "Not a contract");
-        pendingEventTicketImpl = _eventTicketImpl;
-        pendingTicketSaleImpl = _ticketSaleImpl;
-        pendingTicketMarketplaceImpl = _ticketMarketplaceImpl;
+        pendingTicketImpl = _eventTicketImpl;
+        pendingSaleImpl = _ticketSaleImpl;
+        pendingMarketplaceImpl = _ticketMarketplaceImpl;
         implementationUpgradeTime = block.timestamp + IMPLEMENTATION_UPGRADE_DELAY;
         emit ImplementationsProposed(
-            pendingEventTicketImpl, pendingTicketSaleImpl, pendingTicketMarketplaceImpl, implementationUpgradeTime
+            pendingTicketImpl, pendingSaleImpl, pendingMarketplaceImpl, implementationUpgradeTime
         );
     }
 
@@ -83,61 +83,60 @@ contract EventFactory is IEventFactory, Ownable2Step {
         require(implementationUpgradeTime > 0, "No active proposal");
         require(block.timestamp > implementationUpgradeTime, "Upgrade delay haven't passed");
 
-        eventTicketImpl = pendingEventTicketImpl;
-        ticketSaleImpl = pendingTicketSaleImpl;
-        ticketMarketplaceImpl = pendingTicketMarketplaceImpl;
+        eventTicketImpl = pendingTicketImpl;
+        ticketSaleImpl = pendingSaleImpl;
+        ticketMarketplaceImpl = pendingMarketplaceImpl;
 
         implementationUpgradeTime = 0;
-        pendingEventTicketImpl = address(0);
-        pendingTicketSaleImpl = address(0);
-        pendingTicketMarketplaceImpl = address(0);
+        pendingTicketImpl = address(0);
+        pendingSaleImpl = address(0);
+        pendingMarketplaceImpl = address(0);
 
         emit ImplementationsUpgraded(eventTicketImpl, ticketSaleImpl, ticketMarketplaceImpl, block.timestamp);
     }
 
     /// @notice Clones and initializes ticket, sale, and marketplace contracts for a new event.
     /// @dev Organizer stored in factory is the caller, but params can set organizer in child contracts.
-    /// @param createTicketSaleParams Parameters to initialize the event contracts.
-    function createTicketSale(IEventFactory.CreateTicketSaleParams memory createTicketSaleParams) external {
+    /// @param createSaleParams Parameters to initialize the event contracts.
+    function createSale(IFactory.CreateSaleParams memory createSaleParams) external {
         // clone implementations
         address eventTicket = eventTicketImpl.clone();
         address ticketSale = ticketSaleImpl.clone();
         address ticketMarketplace = ticketMarketplaceImpl.clone();
 
-        IEventTicket.EventTicketInitParams memory eventTicketInitParams = IEventTicket.EventTicketInitParams({
-            name: createTicketSaleParams.name,
-            symbol: createTicketSaleParams.symbol,
-            baseURI: createTicketSaleParams.baseURI,
-            organizer: createTicketSaleParams.organizer,
+        ITicket.TicketInitParams memory eventTicketInitParams = ITicket.TicketInitParams({
+            name: createSaleParams.name,
+            symbol: createSaleParams.symbol,
+            baseURI: createSaleParams.baseURI,
+            organizer: createSaleParams.organizer,
             ticketSale: ticketSale,
             ticketMarketplace: ticketMarketplace
         });
-        IEventTicket(eventTicket).initialize(eventTicketInitParams);
+        ITicket(eventTicket).initialize(eventTicketInitParams);
 
-        ITicketSale.TicketSaleInitParams memory ticketSaleInitParams = ITicketSale.TicketSaleInitParams({
+        ISale.SaleInitParams memory ticketSaleInitParams = ISale.SaleInitParams({
             eventTicket: eventTicket,
-            organizer: createTicketSaleParams.organizer,
-            saleStart: createTicketSaleParams.saleStart,
-            saleEnd: createTicketSaleParams.saleEnd,
-            ticketPriceInWei: createTicketSaleParams.priceInWei,
-            ticketMaxSupply: createTicketSaleParams.maxSupply
+            organizer: createSaleParams.organizer,
+            saleStart: createSaleParams.saleStart,
+            saleEnd: createSaleParams.saleEnd,
+            ticketPriceInWei: createSaleParams.priceInWei,
+            ticketMaxSupply: createSaleParams.maxSupply
         });
         require(ticketSaleInitParams.saleStart >= block.timestamp, "Sale start cannot be in the past");
         require(
             ticketSaleInitParams.saleStart < ticketSaleInitParams.saleEnd, "Sale end must be greater than sale start"
         );
         require(ticketSaleInitParams.ticketMaxSupply > 0, "Sale should have positive number of ticket supply");
-        ITicketSale(ticketSale).initialize(ticketSaleInitParams);
+        ISale(ticketSale).initialize(ticketSaleInitParams);
 
-        ITicketMarketplace.TicketMarketplaceInitParams memory ticketMarketplaceInitParams =
-            ITicketMarketplace.TicketMarketplaceInitParams({
-                eventTicket: eventTicket,
-                organizer: createTicketSaleParams.organizer,
-                protocol: owner(),
-                totalFees: TOTAL_FEE_BPS,
-                organizerFee: ORGANIZER_FEE_BPS_OF_TOTAL
-            });
-        ITicketMarketplace(ticketMarketplace).initialize(ticketMarketplaceInitParams);
+        IMarketplace.MarketplaceInitParams memory ticketMarketplaceInitParams = IMarketplace.MarketplaceInitParams({
+            eventTicket: eventTicket,
+            organizer: createSaleParams.organizer,
+            protocol: owner(),
+            totalFees: TOTAL_FEE_BPS,
+            organizerFee: ORGANIZER_FEE_BPS_OF_TOTAL
+        });
+        IMarketplace(ticketMarketplace).initialize(ticketMarketplaceInitParams);
 
         EventEntry memory eventEntry = EventEntry({
             id: nextEventId,
@@ -161,7 +160,7 @@ contract EventFactory is IEventFactory, Ownable2Step {
     /// @notice Returns the sale contract for a given event ticket contract.
     /// @param eventTicket Event ticket contract address.
     /// @return ticketSale Ticket sale contract address.
-    function getTicketSale(address eventTicket) external view returns (address ticketSale) {
+    function getSale(address eventTicket) external view returns (address ticketSale) {
         uint256 eventId = eventIdByTicket[eventTicket];
         ticketSale = eventsById[eventId].ticketSale;
     }
@@ -169,7 +168,7 @@ contract EventFactory is IEventFactory, Ownable2Step {
     /// @notice Returns the marketplace contract for a given event ticket contract.
     /// @param eventTicket Event ticket contract address.
     /// @return ticketMarketplace Ticket marketplace contract address.
-    function getTicketMarketplace(address eventTicket) external view returns (address ticketMarketplace) {
+    function getMarketplace(address eventTicket) external view returns (address ticketMarketplace) {
         uint256 eventId = eventIdByTicket[eventTicket];
         ticketMarketplace = eventsById[eventId].ticketMarketplace;
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-interface IEventFactory {
+interface IFactory {
     struct EventEntry {
         uint256 id;
         address organizer;
@@ -10,7 +10,7 @@ interface IEventFactory {
         address ticketMarketplace;
     }
 
-    struct CreateTicketSaleParams {
+    struct CreateSaleParams {
         string name;
         string symbol;
         string baseURI;

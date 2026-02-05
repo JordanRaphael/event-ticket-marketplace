@@ -6,11 +6,11 @@ import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initia
 import {ERC2771Context} from "openzeppelin-contracts/contracts/metatx/ERC2771Context.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
-import {IEventTicket} from "./interfaces/IEventTicket.sol";
+import {ITicket} from "./interfaces/ITicket.sol";
 
 /// @notice ERC721 ticket contract for a single event.
 /// @dev Minting, burning, and transfers are restricted to protocol contracts.
-contract EventTicket is IEventTicket, ERC721, Initializable, ERC2771Context {
+contract Ticket is ITicket, ERC721, Initializable, ERC2771Context {
     address public ticketSale;
     address public ticketMarketplace;
 
@@ -35,7 +35,7 @@ contract EventTicket is IEventTicket, ERC721, Initializable, ERC2771Context {
     /// @notice Initializes the ticket contract.
     /// @dev Can only be called once.
     /// @param params Initialization parameters for the event ticket.
-    function initialize(EventTicketInitParams memory params) external initializer {
+    function initialize(TicketInitParams memory params) external initializer {
         baseURI = params.baseURI;
         name_ = params.name;
         symbol_ = params.symbol;

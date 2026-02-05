@@ -6,17 +6,17 @@ import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initia
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import {EventTicket} from "./EventTicket.sol";
-import {ITicketSale} from "./interfaces/ITicketSale.sol";
+import {Ticket} from "./Ticket.sol";
+import {ISale} from "./interfaces/ISale.sol";
 
 /// @notice Primary sale contract for event tickets.
 /// @dev Handles minting and payment collection in WETH.
-contract TicketSale is ITicketSale, Initializable, ERC2771Context {
+contract Sale is ISale, Initializable, ERC2771Context {
     using SafeERC20 for IERC20;
 
     IERC20 private constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WETH on Ethereum mainnet
 
-    EventTicket public ticket;
+    Ticket public ticket;
 
     address public eventOrganizer;
     uint256 public saleStart;
@@ -40,8 +40,8 @@ contract TicketSale is ITicketSale, Initializable, ERC2771Context {
     /// @notice Initializes the ticket sale.
     /// @dev Can only be called once.
     /// @param initParams Initialization parameters for the ticket sale.
-    function initialize(TicketSaleInitParams memory initParams) external initializer {
-        ticket = EventTicket(initParams.eventTicket);
+    function initialize(SaleInitParams memory initParams) external initializer {
+        ticket = Ticket(initParams.eventTicket);
         eventOrganizer = initParams.organizer;
         saleStart = initParams.saleStart;
         saleEnd = initParams.saleEnd;
