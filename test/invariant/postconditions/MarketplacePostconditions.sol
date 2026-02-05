@@ -2,7 +2,7 @@
 pragma solidity ^0.8.33;
 
 import {IMarketplace} from "src/interfaces/IMarketplace.sol";
-import {PostconditionsBase} from "test/invariant/postConditions/PostconditionsBase.sol";
+import {PostconditionsBase} from "test/invariant/postconditions/PostconditionsBase.sol";
 
 abstract contract MarketplacePostconditions is PostconditionsBase {
     function afterCreateAsk() external view {

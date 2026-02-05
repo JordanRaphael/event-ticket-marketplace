@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.33;
 
-import {PostconditionsBase} from "test/invariant/postConditions/PostconditionsBase.sol";
+import {PostconditionsBase} from "test/invariant/postconditions/PostconditionsBase.sol";
 
 abstract contract SalePostconditions is PostconditionsBase {
     function afterBuy() external view {
