@@ -14,3 +14,10 @@ docs/
 .env
 
 .vscode/
+
+# coverage report
+*.info
+coverage-report/
+
+# fuzzing corpus
+corpus/

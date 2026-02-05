@@ -12,4 +12,6 @@ interface IEventTicket {
     }
 
     function initialize(EventTicketInitParams memory initParams) external;
+
+    event TicketRedeemed(address redeemer, uint256 ticketId);
 }

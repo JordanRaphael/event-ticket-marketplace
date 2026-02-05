@@ -290,7 +290,7 @@ contract TicketMarketplace is ITicketMarketplace, Initializable, IERC721Receiver
 
     function _updateOrderStorage(uint256 orderId, Order memory order, Action action) private {
         if (action == Action.CREATE_ORDER) {
-            orderIdsByCreator[msg.sender].push(orderId);
+            orderIdsByCreator[_msgSender()].push(orderId);
             ordersById[orderId] = order;
             nextOrderId += 1;
         } else if (action == Action.FILL_ORDER || action == Action.UPDATE_ORDER || action == Action.CANCEL_ORDER) {

@@ -3,12 +3,14 @@ pragma solidity ^0.8.33;
 
 import {ERC721, IERC721Metadata, IERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import {ERC2771Context} from "openzeppelin-contracts/contracts/metatx/ERC2771Context.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 import {IEventTicket} from "./interfaces/IEventTicket.sol";
 
 /// @notice ERC721 ticket contract for a single event.
 /// @dev Minting, burning, and transfers are restricted to protocol contracts.
-contract EventTicket is IEventTicket, ERC721, Initializable {
+contract EventTicket is IEventTicket, ERC721, Initializable, ERC2771Context {
     address public ticketSale;
     address public ticketMarketplace;
 
@@ -20,7 +22,8 @@ contract EventTicket is IEventTicket, ERC721, Initializable {
 
     /// @notice Disables initializers on the implementation contract.
     /// @dev Constructor runs only on the implementation used for clones.
-    constructor() ERC721("NA", "NA") {
+    /// @param trustedForwarder_ ERC2771 trusted forwarder.
+    constructor(address trustedForwarder_) ERC721("NA", "NA") ERC2771Context(trustedForwarder_) {
         _disableInitializers();
     }
 
@@ -50,11 +53,17 @@ contract EventTicket is IEventTicket, ERC721, Initializable {
     }
 
     /// @notice Burns a ticket.
-    /// @dev Only callable by the ticket sale or marketplace.
+    /// @dev Callable by the holder (or forwarder), used to redeem real-world ticket.
     /// @param ticketId Token id to burn.
-    function burn(uint256 ticketId) external onlySaleOrMarketplace {
+    function burn(uint256 ticketId) external {
+        address owner = _ownerOf(ticketId);
+        if (owner != _msgSender()) {
+            revert ERC721IncorrectOwner(_msgSender(), ticketId, owner);
+        }
         totalSupply -= 1;
         _burn(ticketId);
+
+        emit TicketRedeemed(_msgSender(), ticketId);
     }
 
     /// @notice Transfers a ticket.
@@ -93,6 +102,18 @@ contract EventTicket is IEventTicket, ERC721, Initializable {
     }
 
     function _onlySaleOrMarketplace() internal view {
-        require(msg.sender == ticketSale || msg.sender == ticketMarketplace, "Callable only by protocol addresses");
+        require(_msgSender() == ticketSale || _msgSender() == ticketMarketplace, "Callable only by protocol addresses");
+    }
+
+    function _msgSender() internal view virtual override(Context, ERC2771Context) returns (address) {
+        return ERC2771Context._msgSender();
+    }
+
+    function _msgData() internal view virtual override(Context, ERC2771Context) returns (bytes calldata) {
+        return ERC2771Context._msgData();
+    }
+
+    function _contextSuffixLength() internal view virtual override(Context, ERC2771Context) returns (uint256) {
+        return ERC2771Context._contextSuffixLength();
     }
 }

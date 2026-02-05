@@ -50,11 +50,13 @@ contract TicketSale is ITicketSale, Initializable, ERC2771Context {
     }
 
     /// @notice Updates the max supply of tickets for the sale.
-    /// @dev New max supply must be >= already minted supply.
-    /// @param newMaxSupply New max supply value.
-    function setTicketMaxSupply(uint256 newMaxSupply) external onlyOrganizer {
-        require(newMaxSupply >= ticket.totalSupply(), "Max Supply can't be set lower than the ticket's total supply");
-        ticketMaxSupply = newMaxSupply;
+    /// @dev Updated max supply must be >= already minted supply.
+    /// @param updatedMaxSupply Updated max supply value.
+    function setTicketMaxSupply(uint256 updatedMaxSupply) external onlyOrganizer {
+        require(
+            updatedMaxSupply >= ticket.totalSupply(), "Max Supply can't be set lower than the ticket's total supply"
+        );
+        ticketMaxSupply = updatedMaxSupply;
         emit TicketMaxSupplySet(ticketMaxSupply);
     }
 
@@ -66,21 +68,22 @@ contract TicketSale is ITicketSale, Initializable, ERC2771Context {
     }
 
     /// @notice Updates the sale end timestamp.
-    /// @dev Sale must be active or not yet started, and new end must be after start.
-    /// @param newSaleEnd New sale end timestamp.
-    function setSaleEnd(uint256 newSaleEnd) external onlyOrganizer {
+    /// @dev Sale must be active or not yet started, and updated end must be after start.
+    /// @param updatedSaleEnd Updated sale end timestamp.
+    function setSaleEnd(uint256 updatedSaleEnd) external onlyOrganizer {
         require(block.timestamp <= saleEnd, "Sale ended");
-        require(saleStart < newSaleEnd, "New sale end must be after sale start");
-        saleEnd = newSaleEnd;
+        require(saleStart < updatedSaleEnd, "Updated sale end must be after sale start");
+        saleEnd = updatedSaleEnd;
         emit SaleEndSet(saleEnd);
     }
 
     /// @notice Updates the sale start timestamp.
     /// @dev Sale must not have started yet.
-    /// @param newSaleStart New sale start timestamp.
-    function setSaleStart(uint256 newSaleStart) external onlyOrganizer {
+    /// @param updatedSaleStart Updated sale start timestamp.
+    function setSaleStart(uint256 updatedSaleStart) external onlyOrganizer {
         require(block.timestamp < saleStart, "Sale started");
-        saleStart = newSaleStart;
+        require(updatedSaleStart < saleEnd, "Updated sale start must be before sale end");
+        saleStart = updatedSaleStart;
         emit SaleStartSet(saleStart);
     }
 

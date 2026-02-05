@@ -47,9 +47,9 @@ contract EventFactory is IEventFactory, Ownable2Step {
     constructor(address _owner, address _eventTicketImpl, address _ticketSaleImpl, address _ticketMarketplaceImpl)
         Ownable(_owner)
     {
-        require(eventTicketImpl.code.length > 0, "Not a contract");
-        require(ticketSaleImpl.code.length > 0, "Not a contract");
-        require(ticketMarketplaceImpl.code.length > 0, "Not a contract");
+        require(_eventTicketImpl.code.length > 0, "Not a contract");
+        require(_ticketSaleImpl.code.length > 0, "Not a contract");
+        require(_ticketMarketplaceImpl.code.length > 0, "Not a contract");
         eventTicketImpl = _eventTicketImpl;
         ticketSaleImpl = _ticketSaleImpl;
         ticketMarketplaceImpl = _ticketMarketplaceImpl;
