@@ -14,7 +14,7 @@ import {ISale} from "./interfaces/ISale.sol";
 contract Sale is ISale, Initializable, ERC2771Context {
     using SafeERC20 for IERC20;
 
-    IERC20 private constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WETH on Ethereum mainnet
+    IERC20 private immutable WETH;
 
     Ticket public ticket;
 
@@ -33,7 +33,9 @@ contract Sale is ISale, Initializable, ERC2771Context {
     /// @notice Disables initializers on the implementation contract.
     /// @dev Constructor runs only on the implementation used for clones.
     /// @param trustedForwarder_ ERC2771 trusted forwarder.
-    constructor(address trustedForwarder_) ERC2771Context(trustedForwarder_) {
+    /// @param weth wrapped native erc20 address.
+    constructor(address trustedForwarder_, address weth) ERC2771Context(trustedForwarder_) {
+        WETH = IERC20(weth);
         _disableInitializers();
     }
 

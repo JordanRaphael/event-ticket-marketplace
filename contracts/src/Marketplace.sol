@@ -18,7 +18,7 @@ contract Marketplace is IMarketplace, Initializable, IERC721Receiver, ERC2771Con
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    IERC20 private constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WETH on Ethereum mainnet
+    IERC20 private immutable WETH;
 
     uint256 private constant BPS_DENOMINATOR = 10_000;
     uint256 private constant MIN_ORDER_DURATION = 5 minutes;
@@ -42,7 +42,9 @@ contract Marketplace is IMarketplace, Initializable, IERC721Receiver, ERC2771Con
     /// @notice Disables initializers on the implementation contract.
     /// @dev Constructor runs only on the implementation used for clones.
     /// @param trustedForwarder_ ERC2771 trusted forwarder.
-    constructor(address trustedForwarder_) ERC2771Context(trustedForwarder_) {
+    /// @param weth wrapped native erc20 address.
+    constructor(address trustedForwarder_, address weth) ERC2771Context(trustedForwarder_) {
+        WETH = IERC20(weth);
         _disableInitializers();
     }
 

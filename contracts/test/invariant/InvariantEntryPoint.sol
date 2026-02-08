@@ -41,8 +41,8 @@ contract InvariantEntryPointTest is GlobalInvariants {
         weth = MockWETH(WETH_ADDRESS);
 
         Ticket eventTicketImpl = new Ticket(address(0xF1));
-        Sale ticketSaleImpl = new Sale(address(0xF1));
-        Marketplace ticketMarketplaceImpl = new Marketplace(address(0xF1));
+        Sale ticketSaleImpl = new Sale(address(0xF1), WETH_ADDRESS);
+        Marketplace ticketMarketplaceImpl = new Marketplace(address(0xF1), WETH_ADDRESS);
 
         factory = new Factory(
             protocolOwner, address(eventTicketImpl), address(ticketSaleImpl), address(ticketMarketplaceImpl)
@@ -104,8 +104,8 @@ contract InvariantEntryPointTest is GlobalInvariants {
         }
 
         Ticket upgradeTicketImpl = new Ticket(address(0xF2));
-        Sale upgradeSaleImpl = new Sale(address(0xF2));
-        Marketplace upgradeMarketplaceImpl = new Marketplace(address(0xF2));
+        Sale upgradeSaleImpl = new Sale(address(0xF2), WETH_ADDRESS);
+        Marketplace upgradeMarketplaceImpl = new Marketplace(address(0xF2), WETH_ADDRESS);
 
         Config memory config = Config({
             factory: factory,
