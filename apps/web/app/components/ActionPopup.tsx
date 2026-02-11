@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 type ActionPopupProps = {
   message: string;
   onClose?: () => void;
@@ -20,14 +22,14 @@ export default function ActionPopup({ message, onClose }: ActionPopupProps) {
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm font-semibold text-[#1a1411]">{message}</p>
           {onClose ? (
-            <button
+            <Button
               className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5e5249]"
               type="button"
               aria-label="Dismiss notification"
               onClick={onClose}
             >
               Close
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>

@@ -6,6 +6,8 @@ import Marquee from "@/(landing)/components/Marquee";
 import TicketStrip from "@/(landing)/components/TicketStrip";
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
+
 export default function HomePage() {
   return (
         <main className="page">
@@ -24,13 +26,13 @@ export default function HomePage() {
             </div>
             <div className="cta-group">
               <Link href="/events/create">
-                <button className="btn primary" type="button">
+                <Button className="btn primary" type="button">
                   Create an event
-                </button>
+                </Button>
               </Link>
-              <button className="btn ghost" type="button">
+              <Button className="btn ghost" type="button">
                 Browse the marketplace
-              </button>
+              </Button>
             </div>
           </section>
           <Footer />

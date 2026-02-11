@@ -6,6 +6,7 @@ import { formatEther } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { factoryContract } from "@/lib/contracts/factory";
 import { erc20Abi, saleAbi } from "@/lib/contracts/event";
+import { Button } from "@/components/ui/button";
 
 type EventBuyPanelProps = {
   eventName: string;
@@ -181,14 +182,14 @@ export default function EventBuyPanel({
             onChange={(event) => setQuantity(event.target.value)}
           />
         </label>
-        <button
+        <Button
           className="btn small"
           type="button"
           disabled={isPending || !availability.isLive}
           onClick={handleBuy}
         >
           {isPending ? "Processing..." : "Buy tickets"}
-        </button>
+        </Button>
       </div>
 
       {message && <p className="mt-3 text-sm text-[#5e5249]">{message}</p>}

@@ -5,6 +5,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import type { Address, Hash } from "viem";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { useCreateSale } from "@/hooks/useCreateSale";
+import { Button } from "@/components/ui/button";
 import ActionPopup from "@/components/ActionPopup";
 
 type CreateEventFormState = {
@@ -242,10 +243,10 @@ export default function CreateEventPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button className="btn primary" type="submit" disabled={isPending}>
+          <Button className="btn primary" type="submit" disabled={isPending}>
             {isPending ? "Submitting..." : "Create ticket sale"}
-          </button>
-          <button
+          </Button>
+          <Button
             className="btn ghost"
             type="button"
             onClick={() => {
@@ -257,7 +258,7 @@ export default function CreateEventPage() {
             }}
           >
             Reset
-          </button>
+          </Button>
         </div>
         </form>
       </section>
