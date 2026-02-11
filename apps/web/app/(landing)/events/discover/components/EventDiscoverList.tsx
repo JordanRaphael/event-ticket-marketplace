@@ -7,6 +7,7 @@ import {
   getEventStatus,
   type DiscoverEventStatus,
 } from "@/lib/events/discover";
+import { discoverList, discoverStatusColor } from "@/(landing)/events/discover/styles/list";
 
 const statusLabel: Record<DiscoverEventStatus, string> = {
   upcoming: "Upcoming",
@@ -15,28 +16,21 @@ const statusLabel: Record<DiscoverEventStatus, string> = {
   sold_out: "Sold out",
 };
 
-const statusColor: Record<DiscoverEventStatus, string> = {
-  upcoming: "bg-amber-100 text-amber-800",
-  live: "bg-emerald-100 text-emerald-800",
-  ended: "bg-slate-200 text-slate-700",
-  sold_out: "bg-rose-100 text-rose-700",
-};
-
 export default async function EventDiscoverList() {
   try {
     const events = await getDiscoverEvents();
 
     return (
-      <section className="grid gap-8">
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <section className={discoverList.section}>
+        <header className={discoverList.header}>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#5e5249]">
+            <p className={discoverList.eyebrow}>
               Discover Events
             </p>
-            <h1 className="mt-3 text-3xl font-semibold text-[#1a1411]">
+            <h1 className={discoverList.title}>
               Live Events on Sepolia
             </h1>
-            <p className="mt-2 text-sm text-[#5e5249]">
+            <p className={discoverList.description}>
               Explore active and upcoming sales from events created through the
               factory contract.
             </p>
@@ -45,27 +39,27 @@ export default async function EventDiscoverList() {
         </header>
 
         {events.length === 0 && (
-          <div className="rounded-3xl border border-black/10 bg-white/70 p-6 text-sm text-[#5e5249] shadow-[0_18px_40px_rgba(22,14,10,0.08)] backdrop-blur">
+          <div className={discoverList.emptyCard}>
             No events have been created yet on this factory contract.
           </div>
         )}
 
         {events.length > 0 && (
-          <div className="feature-grid">
+          <div className={discoverList.grid}>
             {events.map((event) => {
               const status = getEventStatus(event);
               return (
-                <article className="feature-card" key={event.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="mt-0">{event.name}</h3>
+                <article className={discoverList.card} key={event.id}>
+                  <div className={discoverList.cardHeader}>
+                    <h3 className={discoverList.cardTitle}>{event.name}</h3>
                     <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusColor[status]}`}
+                      className={`${discoverList.statusBadge} ${discoverStatusColor[status]}`}
                     >
                       {statusLabel[status]}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-[#5e5249]">{event.symbol}</p>
-                  <div className="mt-4 grid gap-2 text-sm text-[#1a1411]">
+                  <p className={discoverList.symbol}>{event.symbol}</p>
+                  <div className={discoverList.details}>
                     <div>
                       Remaining tickets:{" "}
                       <span className="font-semibold">{event.remainingTickets}</span>
@@ -83,10 +77,10 @@ export default async function EventDiscoverList() {
                       </span>
                     </div>
                   </div>
-                  <div className="mt-5">
+                  <div className={discoverList.ctaWrap}>
                     <Link
                       href={`/events/discover/${event.eventTicket.toLowerCase()}/${event.id}`}
-                      className="btn small"
+                      className={discoverList.ctaButton}
                     >
                       View event
                     </Link>
@@ -103,19 +97,19 @@ export default async function EventDiscoverList() {
       error instanceof Error ? error.message : "Unable to load events right now.";
 
     return (
-      <section className="grid gap-8">
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <section className={discoverList.section}>
+        <header className={discoverList.header}>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#5e5249]">
+            <p className={discoverList.eyebrow}>
               Discover Events
             </p>
-            <h1 className="mt-3 text-3xl font-semibold text-[#1a1411]">
+            <h1 className={discoverList.title}>
               Live Events on Sepolia
             </h1>
           </div>
           <EventDiscoverRefreshButton />
         </header>
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        <div className={discoverList.errorCard}>
           {message}
         </div>
       </section>

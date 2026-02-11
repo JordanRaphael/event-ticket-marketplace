@@ -17,9 +17,11 @@ export default function Hero() {
               Start selling events
             </button>
           </Link>
-          <button className="btn ghost" type="button">
-            Explore events
-          </button>
+          <Link href="/events/discover">
+            <button className="btn ghost" type="button">
+              Explore events
+            </button>
+          </Link>
         </div>
         <div className="stat-row">
           <div className="stat">

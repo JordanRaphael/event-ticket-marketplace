@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="footer">
@@ -9,7 +11,9 @@ export default function Footer() {
         </p>
       </div>
       <div className="footer-links">
-        <span>Primary Market</span>
+        <Link href="/events/discover">
+          <span>Primary Market</span>
+        </Link>
         <span>Marketplace</span>
         <span>Organizer Tools</span>
       </div>

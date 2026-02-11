@@ -7,6 +7,7 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { factoryContract } from "@/lib/contracts/factory";
 import { erc20Abi, saleAbi } from "@/lib/contracts/event";
 import { Button } from "@/components/ui/button";
+import { eventBuyPanel } from "@/(landing)/events/discover/[ticketAddress]/[ticketId]/styles/detail";
 
 type EventBuyPanelProps = {
   eventName: string;
@@ -157,24 +158,24 @@ export default function EventBuyPanel({
   };
 
   return (
-    <section className="rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_40px_rgba(22,14,10,0.08)] backdrop-blur">
-      <h2 className="text-xl font-semibold text-[#1a1411]">Buy Tickets</h2>
-      <p className="mt-2 text-sm text-[#5e5249]">
+    <section className={eventBuyPanel.card}>
+      <h2 className={eventBuyPanel.title}>Buy Tickets</h2>
+      <p className={eventBuyPanel.priceText}>
         Price per ticket: {formatEther(priceWei)} WETH
       </p>
-      <p className="mt-1 text-sm text-[#5e5249]">
+      <p className={eventBuyPanel.totalText}>
         Total: {formatEther(totalCost)} WETH
       </p>
 
       {!availability.isLive && (
-        <p className="mt-3 text-sm font-medium text-amber-700">{availability.reason}</p>
+        <p className={eventBuyPanel.availabilityText}>{availability.reason}</p>
       )}
 
-      <div className="mt-4 grid gap-3">
-        <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+      <div className={eventBuyPanel.controls}>
+        <label className={eventBuyPanel.fieldLabel}>
           Quantity
           <input
-            className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+            className={eventBuyPanel.quantityInput}
             type="number"
             min="1"
             step="1"
@@ -183,7 +184,7 @@ export default function EventBuyPanel({
           />
         </label>
         <Button
-          className="btn small"
+          className={eventBuyPanel.buyButton}
           type="button"
           disabled={isPending || !availability.isLive}
           onClick={handleBuy}
@@ -192,7 +193,7 @@ export default function EventBuyPanel({
         </Button>
       </div>
 
-      {message && <p className="mt-3 text-sm text-[#5e5249]">{message}</p>}
+      {message && <p className={eventBuyPanel.message}>{message}</p>}
     </section>
   );
 }

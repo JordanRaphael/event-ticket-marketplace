@@ -15,9 +15,11 @@ export default function Header() {
     </Link>
     <div className="nav-actions">
         <Link href="/events/create">
-        <span>Sell tickets</span>
+          <span>Sell tickets</span>
         </Link>
-        <span>Find events</span>
+        <Link href="/events/discover">
+          <span>Find events</span>
+        </Link>
         <ConnectWalletButton /> {/* @todo add ens icon left of the connected address */}
     </div>
     </header>

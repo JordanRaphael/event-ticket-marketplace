@@ -5,6 +5,7 @@ import { isAddress } from "viem";
 import Header from "@/(landing)/components/Header";
 import Footer from "@/(landing)/components/Footer";
 import EventBuyPanel from "@/(landing)/events/discover/[ticketAddress]/[ticketId]/components/EventBuyPanel";
+import { eventDetails } from "@/(landing)/events/discover/[ticketAddress]/[ticketId]/styles/detail";
 import {
   formatEventPeriod,
   formatEventPrice,
@@ -46,23 +47,23 @@ export default async function EventDetailsPage({ params }: EventDetailsPageProps
     <main className="page">
       <Header />
 
-      <section className="grid gap-8">
-        <div className="flex flex-col gap-3">
-          <Link href="/events/discover" className="text-sm font-semibold text-[#5e5249]">
+      <section className={eventDetails.section}>
+        <div className={eventDetails.titleBlock}>
+          <Link href="/events/discover" className={eventDetails.backLink}>
             Back to discover
           </Link>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#5e5249]">
+          <p className={eventDetails.eyebrow}>
             Event details
           </p>
-          <h1 className="text-3xl font-semibold text-[#1a1411]">{event.name}</h1>
-          <p className="text-sm text-[#5e5249]">
+          <h1 className={eventDetails.title}>{event.name}</h1>
+          <p className={eventDetails.subtitle}>
             {event.symbol} • Event #{event.id} • {statusLabel[status]}
           </p>
         </div>
 
-        <section className="rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_40px_rgba(22,14,10,0.08)] backdrop-blur">
-          <h2 className="text-xl font-semibold text-[#1a1411]">Overview</h2>
-          <div className="mt-4 grid gap-3 text-sm text-[#1a1411] md:grid-cols-2">
+        <section className={eventDetails.card}>
+          <h2 className={eventDetails.cardTitle}>Overview</h2>
+          <div className={eventDetails.overviewGrid}>
             <p>
               Remaining tickets:{" "}
               <span className="font-semibold">{event.remainingTickets}</span>
@@ -85,27 +86,27 @@ export default async function EventDetailsPage({ params }: EventDetailsPageProps
           </div>
         </section>
 
-        <section className="rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_40px_rgba(22,14,10,0.08)] backdrop-blur">
-          <h2 className="text-xl font-semibold text-[#1a1411]">Onchain addresses</h2>
-          <div className="mt-4 grid gap-2 text-sm text-[#1a1411]">
+        <section className={eventDetails.card}>
+          <h2 className={eventDetails.cardTitle}>Onchain addresses</h2>
+          <div className={eventDetails.addressesGrid}>
             <p>
-              Ticket contract: <span className="font-mono">{event.eventTicket}</span>
+              Ticket contract: <span className={eventDetails.addressValue}>{event.eventTicket}</span>
             </p>
             <p>
-              Sale contract: <span className="font-mono">{event.ticketSale}</span>
+              Sale contract: <span className={eventDetails.addressValue}>{event.ticketSale}</span>
             </p>
             <p>
               Marketplace contract:{" "}
-              <span className="font-mono">{event.ticketMarketplace}</span>
+              <span className={eventDetails.addressValue}>{event.ticketMarketplace}</span>
             </p>
             <p>
-              Event organizer: <span className="font-mono">{event.eventOrganizer}</span>
+              Event organizer: <span className={eventDetails.addressValue}>{event.eventOrganizer}</span>
             </p>
             <p>
-              Event creator: <span className="font-mono">{event.organizer}</span>
+              Event creator: <span className={eventDetails.addressValue}>{event.organizer}</span>
             </p>
             <p>
-              Metadata URI: <span className="font-mono break-all">{event.baseUri}</span>
+              Metadata URI: <span className={eventDetails.metadataValue}>{event.baseUri}</span>
             </p>
           </div>
         </section>
