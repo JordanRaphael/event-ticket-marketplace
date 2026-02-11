@@ -9,10 +9,17 @@ import { saleAbi, ticketAbi } from "@/lib/contracts/event";
 
 const LOG_START_BLOCK = 10231714n;
 const MAX_LOG_BLOCK_RANGE = 1000n;
+const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
+
+if (!SEPOLIA_RPC_URL) {
+  throw new Error(
+    "Missing SEPOLIA_RPC_URL.",
+  );
+}
 
 const client = createPublicClient({
   chain: sepolia,
-  transport: http(),
+  transport: http(SEPOLIA_RPC_URL),
 });
 
 type EventCreatedRecord = {
