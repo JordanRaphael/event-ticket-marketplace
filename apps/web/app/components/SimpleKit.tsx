@@ -11,7 +11,7 @@ import {
   SimpleKitModalFooter,
   SimpleKitModalHeader,
   SimpleKitModalTitle,
-} from "@/components/simplekit-modal";
+} from "@/components/SimpleKitModal";
 import { Button } from "@/components/ui/button";
 import {
   type Connector,

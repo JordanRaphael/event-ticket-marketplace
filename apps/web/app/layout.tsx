@@ -1,6 +1,6 @@
 import "./globals.css";
 import { Fredoka, Sora } from "next/font/google";
-import Web3ProviderWrapper from "@/components/web3-provider-wrapper";
+import Web3ProviderWrapper from "@/components/Web3ProviderWrapper";
 
 const display = Fredoka({
   subsets: ["latin"],

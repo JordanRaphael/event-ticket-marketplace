@@ -1,4 +1,4 @@
-import { ConnectWalletButton } from "@/components/simplekit"
+import { ConnectWalletButton } from "@/components/SimpleKit"
 import Link from "next/link";
 
 export default function Header() {

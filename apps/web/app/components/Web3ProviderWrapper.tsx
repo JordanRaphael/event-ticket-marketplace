@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { cookieToInitialState } from "wagmi";
 import { getConfig } from "@/lib/wagmi-config";
-import { Web3Provider } from "@/components/web3-provider";
+import { Web3Provider } from "@/components/Web3Provider";
 
 export default async function Web3ProviderWrapper({
   children
