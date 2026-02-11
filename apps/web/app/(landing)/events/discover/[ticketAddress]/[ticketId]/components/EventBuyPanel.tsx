@@ -5,9 +5,11 @@ import type { Address } from "viem";
 import { formatEther } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { factoryContract } from "@/lib/contracts/factory";
-import { erc20Abi, saleAbi } from "@/lib/contracts/event";
+import { erc20Abi, saleAbi, wethAbi } from "@/lib/contracts/event";
 import { Button } from "@/components/ui/button";
 import { eventBuyPanel } from "@/(landing)/events/discover/[ticketAddress]/[ticketId]/styles/detail";
+
+const SEPOLIA_WETH_ADDRESS = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14" as Address;
 
 type EventBuyPanelProps = {
   eventName: string;
@@ -91,11 +93,6 @@ export default function EventBuyPanel({
       setIsPending(true);
       setMessage(null);
 
-      const wethAddress = await publicClient.readContract({
-        address: saleAddress,
-        abi: saleAbi,
-        functionName: "WETH",
-      });
       const latestPriceWei = await publicClient.readContract({
         address: saleAddress,
         abi: saleAbi,
@@ -105,28 +102,53 @@ export default function EventBuyPanel({
 
       const [allowance, balance] = await Promise.all([
         publicClient.readContract({
-          address: wethAddress,
+          address: SEPOLIA_WETH_ADDRESS,
           abi: erc20Abi,
           functionName: "allowance",
           args: [address, saleAddress],
         }),
         publicClient.readContract({
-          address: wethAddress,
+          address: SEPOLIA_WETH_ADDRESS,
           abi: erc20Abi,
           functionName: "balanceOf",
           args: [address],
         }),
       ]);
 
+      let currentBalance = balance;
       if (balance < latestTotalCost) {
-        setMessage("Insufficient WETH balance.");
+        const wrapAmount = latestTotalCost - balance;
+        setMessage(
+          `Insufficient WETH balance, prompting wallet to wrap ${formatEther(wrapAmount)} ETH...`,
+        );
+
+        const wrapHash = await writeContractAsync({
+          address: SEPOLIA_WETH_ADDRESS,
+          abi: wethAbi,
+          functionName: "deposit",
+          value: wrapAmount,
+          chainId: factoryContract.chainId,
+          account: address,
+        });
+        await publicClient.waitForTransactionReceipt({ hash: wrapHash });
+
+        currentBalance = await publicClient.readContract({
+          address: SEPOLIA_WETH_ADDRESS,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [address],
+        });
+      }
+
+      if (currentBalance < latestTotalCost) {
+        setMessage("Insufficient WETH balance, wrap ether to continue.");
         return;
       }
 
       if (allowance < latestTotalCost) {
         setMessage("Approving WETH...");
         const approveHash = await writeContractAsync({
-          address: wethAddress,
+          address: SEPOLIA_WETH_ADDRESS,
           abi: erc20Abi,
           functionName: "approve",
           args: [saleAddress, latestTotalCost],
