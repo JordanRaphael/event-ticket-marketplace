@@ -14,9 +14,9 @@ import {IFactory} from "./interfaces/IFactory.sol";
 contract Factory is IFactory, Ownable2Step {
     using Clones for address;
 
-    uint256 constant IMPLEMENTATION_UPGRADE_DELAY = 7 days;
-    uint256 constant TOTAL_FEE_BPS = 1_000; // 10% of sales
-    uint256 constant ORGANIZER_FEE_BPS_OF_TOTAL = 5_000; // 50% of total fees
+    uint256 public constant IMPLEMENTATION_UPGRADE_DELAY = 7 days;
+    uint256 public constant TOTAL_FEE_BPS = 1_000; // 10% of sales
+    uint256 public constant ORGANIZER_FEE_BPS_OF_TOTAL = 5_000; // 50% of total fees
 
     address public eventTicketImpl;
     address public ticketSaleImpl;
@@ -30,13 +30,13 @@ contract Factory is IFactory, Ownable2Step {
     uint256 public nextEventId;
 
     // Event ID => Event Entry
-    mapping(uint256 => EventEntry) eventsById;
+    mapping(uint256 => EventEntry) public eventsById;
 
     // Organzizer => Event IDs
-    mapping(address => uint256[]) eventIdsByOrganizer;
+    mapping(address => uint256[]) public eventIdsByOrganizer;
 
     // Event Ticket address => Event ID
-    mapping(address => uint256) eventIdByTicket;
+    mapping(address => uint256) public eventIdByTicket;
 
     /// @notice Creates the factory and sets the initial implementations.
     /// @dev Reverts if any implementation address is not a contract.

@@ -14,7 +14,7 @@ import {ISale} from "./interfaces/ISale.sol";
 contract Sale is ISale, Initializable, ERC2771Context {
     using SafeERC20 for IERC20;
 
-    IERC20 private immutable WETH;
+    IERC20 public immutable WETH;
 
     Ticket public ticket;
 

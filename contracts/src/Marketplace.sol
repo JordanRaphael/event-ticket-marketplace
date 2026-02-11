@@ -18,10 +18,10 @@ contract Marketplace is IMarketplace, Initializable, IERC721Receiver, ERC2771Con
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    IERC20 private immutable WETH;
+    IERC20 public immutable WETH;
 
-    uint256 private constant BPS_DENOMINATOR = 10_000;
-    uint256 private constant MIN_ORDER_DURATION = 5 minutes;
+    uint256 public constant BPS_DENOMINATOR = 10_000;
+    uint256 public constant MIN_ORDER_DURATION = 5 minutes;
 
     Ticket public ticket;
 
@@ -31,10 +31,10 @@ contract Marketplace is IMarketplace, Initializable, IERC721Receiver, ERC2771Con
     uint256 public organizerFeeBps; // eventOrganizer's percentage of the total fees in BPS_DENOMINATOR
 
     // address to order Ids
-    mapping(address => uint256[]) orderIdsByCreator;
+    mapping(address => uint256[]) public orderIdsByCreator;
 
     // orderId to order
-    mapping(uint256 => Order) ordersById;
+    mapping(uint256 => Order) public ordersById;
 
     // current order id
     uint256 nextOrderId;
