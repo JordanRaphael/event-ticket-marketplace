@@ -7,6 +7,7 @@ import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { useCreateSale } from "@/hooks/useCreateSale";
 import { Button } from "@/components/ui/button";
 import ActionPopup from "@/components/ActionPopup";
+import { form } from "@/(landing)/events/create/styles/form";
 
 type CreateEventFormState = {
   eventName: string;
@@ -119,25 +120,25 @@ export default function CreateEventPage() {
       <ActionPopup
         message={successMessage}
       />
-      <section className="w-full max-w-3xl rounded-3xl border border-black/10 bg-white/70 p-10 shadow-[0_18px_40px_rgba(22,14,10,0.12)] backdrop-blur">
-        <header className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#5e5249]">
+      <section className={form.section}>
+        <header className={form.header}>
+          <p className={form.eyebrow}>
             Event Builder
           </p>
-          <h1 className="mt-3 text-3xl font-semibold text-[#1a1411]">
+          <h1 className={form.title}>
             Create an Event
           </h1>
-          <p className="mt-2 text-sm text-[#5e5249]">
+          <p className={form.description}>
             Fill in the essentials to create a ticket sale for an event.
           </p>
         </header>
 
-        <form className="grid gap-6" onSubmit={handleSubmit}>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+        <form className={form.body} onSubmit={handleSubmit}>
+        <div className={form.row}>
+          <label className={form.label}>
             Event name
             <input
-              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+              className={form.eventName}
               name="eventName"
               placeholder="Monaco Grand Prix 2026"
               required
@@ -145,10 +146,10 @@ export default function CreateEventPage() {
               onChange={handleChange}
             />
           </label>
-          <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+          <label className={form.label}>
             Event symbol
             <input
-              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm uppercase tracking-[0.2em] focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+              className={form.eventSymbol}
               name="eventSymbol"
               placeholder="MGP26"
               required
@@ -158,10 +159,10 @@ export default function CreateEventPage() {
           </label>
         </div>
 
-        <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+        <label className={form.label}>
           Event URI
           <input
-            className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+            className={form.eventUri}
             name="eventUri"
             placeholder="https://example.com/events/MonacoGP26"
             type="url"
@@ -171,26 +172,26 @@ export default function CreateEventPage() {
           />
         </label>
 
-        <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+        <label className={form.label}>
           Organizer wallet
           <input
-            className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+            className={form.organizerWallet}
             name="organizerWallet"
             placeholder="0x..."
             required
             value={formState.organizerWallet}
             onChange={handleOrganizerChange}
           />
-          <span className="text-xs text-[#5e5249]">
+          <span className={form.hint}>
             Defaulting to your connected wallet address.
           </span>
         </label>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+        <div className={form.row}>
+          <label className={form.label}>
             Ticket price (wei)
             <input
-              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+              className={form.priceInWei}
               name="priceInWei"
               placeholder="1000000000000000"
               required
@@ -201,10 +202,10 @@ export default function CreateEventPage() {
               onChange={handleChange}
             />
           </label>
-          <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+          <label className={form.label}>
             Max supply
             <input
-              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+              className={form.maxSupply}
               name="maxSupply"
               placeholder="2500"
               required
@@ -217,11 +218,11 @@ export default function CreateEventPage() {
           </label>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+        <div className={form.row}>
+          <label className={form.label}>
             Sale start
             <input
-              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+              className={form.saleStart}
               name="saleStart"
               required
               type="datetime-local"
@@ -229,10 +230,10 @@ export default function CreateEventPage() {
               onChange={handleChange}
             />
           </label>
-          <label className="grid gap-2 text-sm font-medium text-[#1a1411]">
+          <label className={form.label}>
             Sale end
             <input
-              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e0482d]/40"
+              className={form.saleEnd}
               name="saleEnd"
               required
               type="datetime-local"
@@ -242,12 +243,12 @@ export default function CreateEventPage() {
           </label>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button className="btn primary" type="submit" disabled={isPending}>
+        <div className={form.actions}>
+          <Button className={form.submitButton} type="submit" disabled={isPending}>
             {isPending ? "Submitting..." : "Create ticket sale"}
           </Button>
           <Button
-            className="btn ghost"
+            className={form.resetButton}
             type="button"
             onClick={() => {
               setOrganizerTouched(false);
